@@ -126,7 +126,7 @@ Useful for "what should I make from this book?" discovery
 | **Image Storage** | Cloudflare R2 | S3-compatible, no egress fees |
 | **OCR** | Claude Vision API | Best-in-class for complex index layouts |
 | **Auth** | better-auth | Self-hosted, full control |
-| **Frontend** | React (Vite or Next.js) | Future React Native compatibility |
+| **Frontend** | Vite + React + TanStack Router/Query | SPA that consumes API; same pattern works for React Native |
 
 ---
 
@@ -135,7 +135,7 @@ Useful for "what should I make from this book?" discovery
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        React Web App                            │
-│                   (Vite + React Query + oRPC client)            │
+│            (Vite + TanStack Router/Query + oRPC client)         │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -145,17 +145,11 @@ Useful for "what should I make from this book?" discovery
 │  │                      Hono Router                          │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
 │  │  │ better-auth │  │    oRPC     │  │  Static Routes  │   │  │
-│  │  │  /api/auth  │  │ /api/trpc/* │  │   /health etc   │   │  │
+│  │  │  /api/auth  │  │  /api/rpc   │  │   /health etc   │   │  │
 │  │  └─────────────┘  └─────────────┘  └─────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                              │                                   │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    Service Layer                          │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │  │
-│  │  │  Books   │  │ Recipes  │  │  Search  │  │   OCR    │  │  │
-│  │  │ Service  │  │ Service  │  │ Service  │  │ Service  │  │  │
-│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │  │
-│  └───────────────────────────────────────────────────────────────┘  │
+│       oRPC procedures call directly into @cookbooks/db          │
 │                              │                                   │
 │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌─────────────┐  │
 │  │    D1     │  │ Vectorize │  │    R2     │  │ Workers AI  │  │
@@ -170,6 +164,13 @@ Useful for "what should I make from this book?" discovery
                     └─────────────────────┘
 ```
 
+### Why Hono + oRPC?
+
+- **Hono** is the HTTP framework that listens for requests on Cloudflare Workers
+- **oRPC** handles type-safe RPC procedures (`books.list`, `recipes.create`, etc.)
+- **better-auth** requires HTTP routes (`/api/auth/*`) - it can't be wrapped in oRPC
+- Hono mounts both oRPC and better-auth at different paths
+
 ---
 
 ## Monorepo Structure
@@ -179,44 +180,59 @@ cookbooks/
 ├── apps/
 │   ├── api/                    # Cloudflare Worker
 │   │   ├── src/
-│   │   │   ├── index.ts        # Hono entry point
-│   │   │   ├── routes/         # Route handlers
-│   │   │   ├── services/       # Business logic
-│   │   │   ├── db/
-│   │   │   │   ├── schema.ts   # Drizzle schema
-│   │   │   │   └── migrations/ # D1 migrations
-│   │   │   └── lib/            # Utilities
+│   │   │   ├── index.ts        # Hono entry point (mounts oRPC + better-auth)
+│   │   │   ├── rpc/            # oRPC router and procedures
+│   │   │   │   ├── router.ts   # Main router (exports AppRouter type)
+│   │   │   │   ├── books.ts    # Book procedures
+│   │   │   │   ├── recipes.ts  # Recipe procedures
+│   │   │   │   └── search.ts   # Search procedures
+│   │   │   ├── auth/           # better-auth setup
+│   │   │   └── lib/            # Utilities (e.g., Claude API client)
 │   │   ├── wrangler.toml       # CF Worker config
 │   │   └── package.json
 │   │
-│   └── web/                    # React frontend
+│   └── web/                    # React frontend (SPA)
 │       ├── src/
 │       │   ├── components/
-│       │   ├── pages/
+│       │   ├── routes/         # TanStack Router pages
 │       │   ├── hooks/
 │       │   └── lib/
-│       │       └── api.ts      # oRPC client setup
+│       │       └── api.ts      # oRPC client (imports type from apps/api)
 │       ├── vite.config.ts
 │       └── package.json
 │
 ├── packages/
-│   ├── shared/                 # Shared types & schemas
+│   ├── db/                     # Drizzle schema & queries
+│   │   ├── src/
+│   │   │   ├── schema.ts       # Drizzle table definitions
+│   │   │   ├── queries/        # Query functions (accept db instance)
+│   │   │   │   ├── books.ts
+│   │   │   │   ├── recipes.ts
+│   │   │   │   └── search.ts
+│   │   │   └── index.ts        # Re-exports
+│   │   ├── drizzle.config.ts
+│   │   ├── migrations/         # D1 migrations
+│   │   └── package.json
+│   │
+│   ├── shared/                 # Shared types & Zod schemas
 │   │   ├── src/
 │   │   │   ├── types.ts        # Shared TypeScript types
 │   │   │   └── validation.ts   # Zod schemas (shared validation)
 │   │   └── package.json
 │   │
-│   ├── api-client/             # oRPC client (consumed by web/mobile)
-│   │   ├── src/
-│   │   │   └── index.ts
-│   │   └── package.json
-│   │
-│   └── ui/                     # Shared React components
-│       └── ... (existing)
+│   └── ui/                     # Shared React components (optional)
+│       └── package.json
 │
 ├── turbo.json
 └── package.json
 ```
+
+### Package Relationships
+
+- **`apps/api`** → imports `@cookbooks/db` for queries, `@cookbooks/shared` for validation
+- **`apps/web`** → imports router type from `apps/api`, imports `@cookbooks/shared` for validation
+- **`packages/db`** → exports schema, types, and query functions (queries take D1 instance as param)
+- **`packages/shared`** → exports Zod schemas and TypeScript types used by both apps
 
 ---
 
@@ -378,13 +394,19 @@ binding = "AI"
 
 ## Open Questions
 
-1. **oRPC + React Native**: oRPC client should work in React Native since it's just HTTP under the hood. Need to verify the client bundle works in RN environment.
+1. **oRPC + React Native**: oRPC client should work in React Native since it's just HTTP/fetch under the hood. Test early when adding mobile support.
 
 2. **better-auth + Workers**: better-auth has a Cloudflare Workers adapter. Need to verify D1 compatibility for session storage.
 
 3. **FTS Sync**: D1 FTS tables need triggers to stay in sync with the main recipes table. Drizzle may need raw SQL for this.
 
 4. **Rate Limiting**: Should we add rate limiting for OCR processing (Claude API costs)?
+
+## Resolved Decisions
+
+- **Why Hono?** Hono is the HTTP framework that mounts both oRPC (at `/api/rpc`) and better-auth (at `/api/auth`). oRPC can't serve HTTP alone, and better-auth requires HTTP routes.
+- **Service Layer?** Skipping for now. oRPC procedures call directly into `@cookbooks/db` query functions. Extract services later if needed.
+- **packages/api-client?** Not needed. Web app imports the router type directly from `apps/api` and creates its own oRPC client. Mobile would do the same.
 
 ---
 
