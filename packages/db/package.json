@@ -1,10 +1,28 @@
 {
   "name": "@packages/db",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:studio": "bunx drizzle-kit studio",
+    "db:migrate:local": "bunx drizzle-kit migrate --config=drizzle.config.local.ts",
+    "db:studio:local": "bunx drizzle-kit studio --config=drizzle.config.local.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250124.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
+    "@types/node": "^25.1.0",
+    "better-sqlite3": "^12.6.2",
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.21.0"
   },
