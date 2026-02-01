@@ -128,11 +128,11 @@ export class ProcessIndexImageWorkflow extends WorkflowEntrypoint<Env, ProcessIn
 
       if (newRecipes.length > 0) {
         // Build batch queries to stay under D1's 100 parameter limit
-        const batchQueries = [];
-        for (let i = 0; i < newRecipes.length; i += BATCH_SIZE) {
-          const batch = newRecipes.slice(i, i + BATCH_SIZE);
-          batchQueries.push(db.insert(recipes).values(batch));
-        }
+        const batchCount = Math.ceil(newRecipes.length / BATCH_SIZE);
+        const batchQueries = Array.from({ length: batchCount }, (_, i) => {
+          const batch = newRecipes.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+          return db.insert(recipes).values(batch);
+        });
         // Execute all inserts in a single round-trip
         // Destructure to satisfy Drizzle's non-empty tuple requirement
         const [first, ...rest] = batchQueries;
