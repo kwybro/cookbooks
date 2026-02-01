@@ -5,6 +5,9 @@ import * as schema from './db/schema';
 // Re-export all schema tables and types
 export * from './db/schema';
 
+// Re-export commonly used drizzle operators
+export { eq, ne, gt, gte, lt, lte, and, or, like, inArray, isNull, isNotNull, desc, asc } from 'drizzle-orm';
+
 // Export schema object for use with drizzle instance
 export { schema };
 
