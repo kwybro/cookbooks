@@ -23,6 +23,9 @@ export const recipes = sqliteTable('recipes', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+// Processing status for index images
+export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
 // IndexImages table - stores references to R2 images of cookbook index pages
 export const indexImages = sqliteTable('index_images', {
   id: text('id').primaryKey(),
@@ -30,6 +33,8 @@ export const indexImages = sqliteTable('index_images', {
     .notNull()
     .references(() => books.id, { onDelete: 'cascade' }),
   r2Key: text('r2_key').notNull(),
+  status: text('status').$type<ProcessingStatus>().notNull().default('pending'),
+  errorMessage: text('error_message'),
   lastProcessedAt: integer('last_processed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

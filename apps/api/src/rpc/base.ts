@@ -7,6 +7,9 @@ type Bindings = {
   DB: D1Database;
   IMAGES: R2Bucket;
   AI: Ai;
+  VECTORIZE: VectorizeIndex;
+  PROCESS_INDEX_WORKFLOW: Workflow;
+  ANTHROPIC_API_KEY: string;
 };
 
 // Variables set in Hono middleware

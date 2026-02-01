@@ -3,11 +3,17 @@ import { books, createDb, type Database } from '@packages/db';
 import { Hono } from 'hono';
 import { appRouter, type RPCContext } from './rpc';
 
+// Re-export the workflow for Cloudflare to find it
+export { ProcessIndexImageWorkflow } from './workflows/processIndexImage';
+
 // Cloudflare Worker bindings from wrangler.jsonc
 type Bindings = {
   DB: D1Database;
   IMAGES: R2Bucket;
   AI: Ai;
+  VECTORIZE: VectorizeIndex;
+  PROCESS_INDEX_WORKFLOW: Workflow;
+  ANTHROPIC_API_KEY: string;
 };
 
 // Variables available in Hono context
@@ -38,6 +44,27 @@ app.get('/db-test', async (c) => {
   const db = c.get('db');
   const result = await db.select().from(books).limit(1);
   return c.json({ success: true, count: result.length });
+});
+
+// R2 Upload endpoint - receives image data and stores in R2
+app.put('/api/upload/:key{.+}', async (c) => {
+  const key = c.req.param('key');
+  const contentType = c.req.header('Content-Type') || 'application/octet-stream';
+
+  // Validate content type is an image
+  if (!contentType.startsWith('image/')) {
+    return c.json({ error: 'Only image uploads are allowed' }, 400);
+  }
+
+  const body = await c.req.arrayBuffer();
+
+  await c.env.IMAGES.put(key, body, {
+    httpMetadata: {
+      contentType,
+    },
+  });
+
+  return c.json({ success: true, key });
 });
 
 // oRPC handler

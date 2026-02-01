@@ -24,5 +24,22 @@
   // Workers AI (for embeddings)
   "ai": {
     "binding": "AI"
-  }
+  },
+
+  // Vectorize (for semantic search)
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "recipe-embeddings"
+    }
+  ],
+
+  // Workflows
+  "workflows": [
+    {
+      "name": "process-index-image",
+      "binding": "PROCESS_INDEX_WORKFLOW",
+      "class_name": "ProcessIndexImageWorkflow"
+    }
+  ]
 }

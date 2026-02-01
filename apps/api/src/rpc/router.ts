@@ -1,12 +1,13 @@
 import { base } from './base';
 import { booksRouter } from './books';
+import { indexImagesRouter } from './indexImages';
 
 // Main oRPC router combining all procedure routers
 export const appRouter = base.router({
   books: booksRouter,
+  indexImages: indexImagesRouter,
   // TODO: Add more routers as they're created:
   // recipes: recipesRouter,
-  // indexImages: indexImagesRouter,
   // search: searchRouter,
 });
 
