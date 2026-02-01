@@ -1,8 +1,8 @@
-import { createBook } from './createBook';
-import { deleteBook } from './deleteBook';
-import { getBook } from './getBook';
-import { listBooks } from './listBooks';
-import { updateBook } from './updateBook';
+import { createBook } from './create';
+import { deleteBook } from './delete';
+import { getBook } from './get';
+import { listBooks } from './list';
+import { updateBook } from './update';
 
 export const booksRouter = {
   list: listBooks,

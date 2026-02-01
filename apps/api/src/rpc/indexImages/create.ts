@@ -1,4 +1,4 @@
-import { eq, indexImages } from '@packages/db';
+import { indexImages } from '@packages/db';
 import { publicProcedure } from '../base';
 import { createIndexImageSchema } from './schema';
 
