@@ -7,9 +7,11 @@
     "types": "wrangler types"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.34",
     "@orpc/client": "^1.13.4",
     "@orpc/server": "^1.13.4",
     "@packages/db": "workspace:*",
+    "ai": "^6.0.66",
     "hono": "^4.11.7",
     "zod": "^4.3.6"
   },

@@ -1,5 +1,8 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { books, createDb, eq, indexImages, recipes } from '@packages/db';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
 
 // Workflow parameters
 export type ProcessIndexImageParams = {
@@ -8,13 +11,23 @@ export type ProcessIndexImageParams = {
   r2Key: string;
 };
 
-// Recipe extracted from Claude Vision
-type ExtractedRecipe = {
-  name: string;
-  page_start: number;
-  page_end: number | null;
-  category: string | null;
-};
+// Schema for recipes extracted from Claude Vision
+const ExtractedRecipeSchema = z.object({
+  name: z.string().describe('The recipe name exactly as written'),
+  page_start: z.number().describe('The starting page number'),
+  page_end: z
+    .number()
+    .nullable()
+    .describe('The ending page number if it spans pages, otherwise null'),
+  category: z
+    .string()
+    .nullable()
+    .describe('The section/category if visible (e.g., "Salads", "Mains")'),
+});
+
+const ExtractedRecipesSchema = z.object({
+  recipes: z.array(ExtractedRecipeSchema).describe('List of recipes extracted from the index page'),
+});
 
 // Environment bindings for the workflow
 type Env = {
@@ -30,87 +43,77 @@ export class ProcessIndexImageWorkflow extends WorkflowEntrypoint<Env, ProcessIn
     const { indexImageId, bookId, r2Key } = event.payload;
     const db = createDb(this.env.DB);
 
-    // Step 1: Fetch image from R2
-    const imageData = await step.do('fetch-image', async () => {
+    console.log('[Workflow] Starting ProcessIndexImage', { indexImageId, bookId, r2Key });
+
+    // Step 1: Fetch image from R2 and extract recipes with Claude Vision
+    // Combined into one step to avoid serializing large base64 image data between steps
+    const extractedRecipes = await step.do('fetch-and-extract', async () => {
+      // Fetch image from R2
       const object = await this.env.IMAGES.get(r2Key);
       if (!object) {
         throw new Error(`Image not found in R2: ${r2Key}`);
       }
 
       const arrayBuffer = await object.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+      // Convert to base64 in chunks to avoid stack overflow with large images
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const chunkSize = 8192;
+      let binaryString = '';
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, i + chunkSize);
+        binaryString += String.fromCharCode(...chunk);
+      }
+      const base64 = btoa(binaryString);
       const contentType = object.httpMetadata?.contentType || 'image/jpeg';
 
-      return { base64, contentType };
-    });
-
-    // Step 2: Call Claude Vision API to extract recipes
-    const extractedRecipes = await step.do('extract-recipes', async () => {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4096,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: imageData.contentType,
-                    data: imageData.base64,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: `Analyze this cookbook index page and extract all recipe entries.
-
-For each recipe, provide:
-- name: The recipe name exactly as written
-- page_start: The starting page number
-- page_end: The ending page number (if it spans pages, otherwise null)
-- category: The section/category if visible (e.g., "Salads", "Mains")
-
-Return ONLY a valid JSON array, no other text:
-[
-  {"name": "Recipe Name", "page_start": 123, "page_end": null, "category": "Category"},
-  ...
-]
-
-Handle multi-column layouts. Include sub-recipes if listed.`,
-                },
-              ],
-            },
-          ],
-        }),
+      // Call Claude Vision API
+      const anthropic = createAnthropic({
+        apiKey: this.env.ANTHROPIC_API_KEY,
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Claude API error: ${error}`);
+      const { output } = await generateText({
+        model: anthropic('claude-sonnet-4-20250514'),
+        output: Output.object({ schema: ExtractedRecipesSchema }),
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                image: `data:${contentType};base64,${base64}`,
+              },
+              {
+                type: 'text',
+                text: `Analyze this cookbook index page and extract all recipe entries.
+      Handle multi-column layouts. Include sub-recipes if listed.`,
+              },
+            ],
+          },
+        ],
+        maxOutputTokens: 4096,
+      });
+
+      // Return a clean serializable copy for Workflow state persistence
+      if (!output || !output.recipes) {
+        return [];
       }
 
-      const result = (await response.json()) as {
-        content: Array<{ type: string; text?: string }>;
-      };
-      const textContent = result.content.find((c) => c.type === 'text');
-      if (!textContent?.text) {
-        throw new Error('No text response from Claude');
-      }
+      const recipes = output.recipes.map((recipe) => ({
+        name: recipe.name,
+        page_start: recipe.page_start,
+        page_end: recipe.page_end,
+        category: recipe.category,
+      }));
 
-      // Parse the JSON response
-      const parsed = JSON.parse(textContent.text) as ExtractedRecipe[];
-      return parsed;
+      return recipes;
     });
 
-    // Step 3: Insert recipes into D1
+    // Step 2: Insert recipes into D1
+    // D1 has a limit of 100 bound parameters per query
+    // With 7 columns per recipe, we can insert ~14 recipes per batch
+    const BATCH_SIZE = 14;
+
     const insertedRecipes = await step.do('insert-recipes', async () => {
       const now = new Date();
       const newRecipes = extractedRecipes.map((recipe) => ({
@@ -124,13 +127,22 @@ Handle multi-column layouts. Include sub-recipes if listed.`,
       }));
 
       if (newRecipes.length > 0) {
-        await db.insert(recipes).values(newRecipes);
+        // Build batch queries to stay under D1's 100 parameter limit
+        const batchQueries = [];
+        for (let i = 0; i < newRecipes.length; i += BATCH_SIZE) {
+          const batch = newRecipes.slice(i, i + BATCH_SIZE);
+          batchQueries.push(db.insert(recipes).values(batch));
+        }
+        // Execute all inserts in a single round-trip
+        // Destructure to satisfy Drizzle's non-empty tuple requirement
+        const [first, ...rest] = batchQueries;
+        await db.batch([first, ...rest]);
       }
 
       return newRecipes;
     });
 
-    // Step 4: Generate embeddings for each recipe using Workers AI
+    // Step 3: Generate embeddings for each recipe using Workers AI
     const embeddings = await step.do('generate-embeddings', async () => {
       const recipeTexts = insertedRecipes.map((r) => {
         const parts = [r.name];
@@ -155,7 +167,7 @@ Handle multi-column layouts. Include sub-recipes if listed.`,
       throw new Error('Unexpected async response from Workers AI');
     });
 
-    // Step 5: Insert embeddings into Vectorize
+    // Step 4: Insert embeddings into Vectorize
     await step.do('insert-vectorize', async () => {
       if (embeddings.length === 0) {
         return { inserted: 0 };
@@ -168,7 +180,7 @@ Handle multi-column layouts. Include sub-recipes if listed.`,
 
       const vectors = insertedRecipes.map((recipe, index) => ({
         id: recipe.id,
-        values: embeddings[index] as number[],
+        values: embeddings[index],
         metadata: {
           recipe_id: recipe.id,
           book_id: bookId,
@@ -182,7 +194,7 @@ Handle multi-column layouts. Include sub-recipes if listed.`,
       return { inserted: vectors.length };
     });
 
-    // Step 6: Update IndexImage status to completed
+    // Step 5: Update IndexImage status to completed
     await step.do('update-status', async () => {
       await db
         .update(indexImages)
