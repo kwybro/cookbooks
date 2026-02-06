@@ -1,6 +1,7 @@
 import { RPCHandler } from '@orpc/server/fetch';
 import { books, createDb, type Database } from '@packages/db';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { appRouter, type RPCContext } from './rpc';
 
 // Re-export the workflow for Cloudflare to find it
@@ -22,6 +23,25 @@ type Variables = {
 };
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+// CORS middleware
+app.use(
+  '*',
+  cors({
+    origin: (origin) => {
+      // Allow localhost and local network IPs for development
+      if (origin.startsWith('http://localhost:')) return origin;
+      if (origin.startsWith('http://192.168.')) return origin;
+      if (origin.startsWith('http://10.')) return origin;
+      // Add production domains here
+      if (origin === 'https://cookbooks-web.kwybro.workers.dev') return origin;
+      return null;
+    },
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
+  })
+);
 
 // Middleware: Initialize database connection for each request
 app.use('*', async (c, next) => {
