@@ -1,0 +1,21 @@
+{
+  "name": "api2",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:migrate:dev": "wrangler d1 migrations apply cookbooks-db --remote"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@cookbooks/db2": "workspace:*",
+    "@cookbooks/schemas": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "hono": "^4.11.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260214.0",
+    "wrangler": "^4.4.0"
+  }
+}
