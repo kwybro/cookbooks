@@ -53,7 +53,7 @@ export const extractCookbookData = async (
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 4096,
+    max_tokens: 16384,
     messages: [
       {
         role: 'user',
@@ -65,6 +65,10 @@ export const extractCookbookData = async (
     ],
   });
 
+  if (response.stop_reason === 'max_tokens') {
+    throw new Error('Claude response was truncated — the cookbook index may be too large for a single scan');
+  }
+
   const textBlock = response.content.find((block) => block.type === 'text');
   if (!textBlock || textBlock.type !== 'text') {
     throw new Error('No text response from Claude');
@@ -72,6 +76,11 @@ export const extractCookbookData = async (
 
   // Strip markdown code fences if Claude wraps the response
   const raw = textBlock.text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
-  const parsed: ScanResultType = JSON.parse(raw);
-  return parsed;
+
+  try {
+    const parsed: ScanResultType = JSON.parse(raw);
+    return parsed;
+  } catch {
+    throw new Error(`Failed to parse Claude response as JSON: ${raw.slice(0, 200)}`);
+  }
 };
