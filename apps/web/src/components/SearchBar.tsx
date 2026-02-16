@@ -1,46 +1,34 @@
-import { Loader2, Search, X } from 'lucide-react';
-import { useRef } from 'react';
-import { Input } from './ui/input';
+import { Search } from 'lucide-react'
+import { useState } from 'react'
 
-interface SearchBarProps {
-  value: string;
-  onChange: (value: string) => void;
-  isLoading?: boolean;
-}
+import { useDebouncedValue, useSearch } from '@/hooks/use-search'
+import { Input } from '@/components/ui/input'
+import { SearchResults } from '@/components/SearchResults'
 
-export function SearchBar({ value, onChange, isLoading }: SearchBarProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleClear = () => {
-    onChange('');
-    inputRef.current?.focus();
-  };
+export function SearchBar() {
+  const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query)
+  const { data: results, isLoading } = useSearch(debouncedQuery)
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-      <Input
-        ref={inputRef}
-        type="text"
-        placeholder="Search recipes..."
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoFocus
-        className="pl-10 pr-10 h-12 text-base"
-      />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-        {isLoading ? (
-          <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-        ) : value ? (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        ) : null}
+    <div className="relative w-full max-w-lg mx-auto">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search recipes..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="pl-9 h-12 text-base"
+        />
       </div>
+      {debouncedQuery.length > 0 && (
+        <SearchResults
+          results={results ?? []}
+          isLoading={isLoading}
+          onClose={() => setQuery('')}
+        />
+      )}
     </div>
-  );
+  )
 }

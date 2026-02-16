@@ -1,48 +1,29 @@
 import { Link } from '@tanstack/react-router'
-import { BookOpen, Trash2 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
+import { Book } from 'lucide-react'
+
+import { Card, CardContent } from '@/components/ui/card'
+import type { BookType } from '@cookbooks/schemas'
 
 interface BookCardProps {
-  id: string
-  title: string
-  author?: string | null
-  onDelete?: (id: string) => void
-  isDeleting?: boolean
+  book: BookType
 }
 
-export function BookCard({ id, title, author, onDelete, isDeleting }: BookCardProps) {
+export function BookCard({ book }: BookCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <Link to="/books/$bookId" params={{ bookId: id }} className="flex-1">
-          <CardTitle className="text-lg font-semibold hover:text-primary transition-colors">
-            {title}
-          </CardTitle>
-        </Link>
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault()
-              onDelete(id)
-            }}
-            disabled={isDeleting}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
-        <Link to="/books/$bookId" params={{ bookId: id }} className="block">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <BookOpen className="h-4 w-4" />
-            <span className="text-sm">{author ?? 'Unknown Author'}</span>
+    <Link to="/books/$bookId" params={{ bookId: book.id }}>
+      <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
+        <CardContent className="flex flex-col items-center justify-center text-center p-6 gap-3">
+          <div className="rounded-lg bg-muted p-3">
+            <Book className="h-8 w-8 text-muted-foreground" />
           </div>
-        </Link>
-      </CardContent>
-    </Card>
+          <div>
+            <p className="font-semibold leading-tight">{book.title}</p>
+            {book.author && (
+              <p className="text-sm text-muted-foreground mt-1">{book.author}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }

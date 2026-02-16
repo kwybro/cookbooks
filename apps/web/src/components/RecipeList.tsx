@@ -1,74 +1,34 @@
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Skeleton } from './ui/skeleton'
-
-interface Recipe {
-  id: string
-  name: string
-  pageStart: number | null
-  pageEnd: number | null
-}
+import { useDeleteRecipe, useUpdateRecipe } from '@/hooks/use-recipes'
+import { RecipeRow } from '@/components/RecipeRow'
+import type { RecipeType } from '@cookbooks/schemas'
 
 interface RecipeListProps {
-  recipes: Recipe[]
-  isLoading?: boolean
+  bookId: string
+  recipes: RecipeType[]
 }
 
-export function RecipeList({ recipes, isLoading }: RecipeListProps) {
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recipes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </CardContent>
-      </Card>
-    )
-  }
+export function RecipeList({ bookId, recipes }: RecipeListProps) {
+  const updateRecipe = useUpdateRecipe(bookId)
+  const deleteRecipe = useDeleteRecipe(bookId)
 
   if (recipes.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recipes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No recipes found. Upload and process an index image to extract recipes.
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-muted-foreground text-center py-8">
+        No recipes found in this book.
+      </p>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recipes ({recipes.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-border">
-          {recipes.map((recipe) => (
-            <li
-              key={recipe.id}
-              className="py-3 flex items-center justify-between"
-            >
-              <span className="font-medium">{recipe.name}</span>
-              {recipe.pageStart && (
-                <span className="text-sm text-muted-foreground">
-                  p. {recipe.pageStart}
-                  {recipe.pageEnd && recipe.pageEnd !== recipe.pageStart
-                    ? `-${recipe.pageEnd}`
-                    : ''}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col divide-y divide-border">
+      {recipes.map((recipe) => (
+        <RecipeRow
+          key={recipe.id}
+          recipe={recipe}
+          onUpdate={(id, data) => updateRecipe.mutate({ id, data })}
+          onDelete={(id) => deleteRecipe.mutate(id)}
+        />
+      ))}
+    </div>
   )
 }

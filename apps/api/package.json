@@ -1,22 +1,21 @@
 {
-  "name": "@cookbooks/api",
+  "name": "api",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "types": "wrangler types"
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:migrate:dev": "wrangler d1 migrations apply cookbooks-db --remote"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.34",
-    "@orpc/client": "^1.13.4",
-    "@orpc/server": "^1.13.4",
-    "@packages/db": "workspace:*",
-    "ai": "^6.0.66",
-    "hono": "^4.11.7",
-    "zod": "^4.3.6"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@cookbooks/db": "workspace:*",
+    "@cookbooks/schemas": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "hono": "^4.11.9"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250124.0",
-    "wrangler": "^4.0.0"
+    "@cloudflare/workers-types": "^4.20260214.0",
+    "wrangler": "^4.4.0"
   }
 }

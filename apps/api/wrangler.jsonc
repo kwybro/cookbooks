@@ -1,49 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cookbooks-api",
+  "name": "api",
   "main": "src/index.ts",
-  "compatibility_date": "2024-12-01",
-
-  "observability": {
-    "enabled": true
-  },
-
-  // D1 Database
+  "compatibility_date": "2026-02-15",
+  "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cookbooks",
-      "database_id": "417cfee3-2a60-440d-b1bf-79e57ea91b5c"
-    }
-  ],
-
-  // R2 Storage (for cookbook index images)
-  "r2_buckets": [
-    {
-      "binding": "IMAGES",
-      "bucket_name": "cookbook-images"
-    }
-  ],
-
-  // Workers AI (for embeddings)
-  "ai": {
-    "binding": "AI"
-  },
-
-  // Vectorize (for semantic search)
-  "vectorize": [
-    {
-      "binding": "VECTORIZE",
-      "index_name": "recipe-embeddings"
-    }
-  ],
-
-  // Workflows
-  "workflows": [
-    {
-      "name": "process-index-image",
-      "binding": "PROCESS_INDEX_WORKFLOW",
-      "class_name": "ProcessIndexImageWorkflow"
+      "database_name": "cookbooks-db",
+      "database_id": "ad068189-59c0-49d5-abf5-a8d835b98a31",
+      "migrations_dir": "../../packages/db/drizzle"
     }
   ]
+  // "vars": {
+  //   "ANTHROPIC_API_KEY": ""  // Set via `wrangler secret put ANTHROPIC_API_KEY`
+  // }
 }

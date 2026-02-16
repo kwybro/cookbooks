@@ -4,11 +4,11 @@ dist
 dist-ssr
 *.local
 count.txt
-.env.*
+.env
 .nitro
 .tanstack
 .wrangler
 .output
 .vinxi
+__unconfig*
 todos.json
-*.tsbuildinfo
