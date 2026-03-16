@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct CookbooksApp: App {
+struct SlowcookApp: App {
     @State private var showSettings = false
 
     var body: some Scene {

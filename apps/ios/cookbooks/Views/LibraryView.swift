@@ -29,7 +29,7 @@ struct LibraryView: View {
                     }
                 }
             }
-            .navigationTitle("My Cookbooks")
+            .navigationTitle("Slowcook")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showScan = true } label: {
@@ -65,7 +65,7 @@ struct LibraryView: View {
         } description: {
             Text("Tap + to scan a cookbook's cover and index pages.")
         } actions: {
-            Button("Scan a Cookbook") { showScan = true }
+            Button("Scan Your First Cookbook") { showScan = true }
                 .buttonStyle(.borderedProminent)
         }
     }
