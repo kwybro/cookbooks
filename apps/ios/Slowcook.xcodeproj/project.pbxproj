@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		1BE934D52F68997400A78B5E /* cookbooks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cookbooks.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BE934D52F68997400A78B5E /* cookbooks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = cookbooks.app; path = Slowcook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1BE934D72F68997400A78B5E /* cookbooks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = cookbooks;
+			path = Slowcook;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
