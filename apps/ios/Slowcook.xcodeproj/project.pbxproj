@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		1BE934D52F68997400A78B5E /* cookbooks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = cookbooks.app; path = Slowcook.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BE934D52F68997400A78B5E /* Slowcook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slowcook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1BE934D72F68997400A78B5E /* cookbooks */ = {
+		1BE934D72F68997400A78B5E /* Slowcook */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Slowcook;
 			sourceTree = "<group>";
@@ -32,7 +32,7 @@
 		1BE934CC2F68997400A78B5E = {
 			isa = PBXGroup;
 			children = (
-				1BE934D72F68997400A78B5E /* cookbooks */,
+				1BE934D72F68997400A78B5E /* Slowcook */,
 				1BE934D62F68997400A78B5E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 		1BE934D62F68997400A78B5E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1BE934D52F68997400A78B5E /* cookbooks.app */,
+				1BE934D52F68997400A78B5E /* Slowcook.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1BE934D42F68997400A78B5E /* cookbooks */ = {
+		1BE934D42F68997400A78B5E /* Slowcook */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1BE934E22F68997400A78B5E /* Build configuration list for PBXNativeTarget "cookbooks" */;
+			buildConfigurationList = 1BE934E22F68997400A78B5E /* Build configuration list for PBXNativeTarget "Slowcook" */;
 			buildPhases = (
 				1BE934D12F68997400A78B5E /* Sources */,
 				1BE934D22F68997400A78B5E /* Frameworks */,
@@ -61,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				1BE934D72F68997400A78B5E /* cookbooks */,
+				1BE934D72F68997400A78B5E /* Slowcook */,
 			);
-			name = cookbooks;
+			name = Slowcook;
 			packageProductDependencies = (
 			);
 			productName = cookbooks;
-			productReference = 1BE934D52F68997400A78B5E /* cookbooks.app */;
+			productReference = 1BE934D52F68997400A78B5E /* Slowcook.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 1BE934D02F68997400A78B5E /* Build configuration list for PBXProject "cookbooks" */;
+			buildConfigurationList = 1BE934D02F68997400A78B5E /* Build configuration list for PBXProject "Slowcook" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1BE934D42F68997400A78B5E /* cookbooks */,
+				1BE934D42F68997400A78B5E /* Slowcook */,
 			);
 		};
 /* End PBXProject section */
@@ -309,7 +309,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1BE934D02F68997400A78B5E /* Build configuration list for PBXProject "cookbooks" */ = {
+		1BE934D02F68997400A78B5E /* Build configuration list for PBXProject "Slowcook" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1BE934E02F68997400A78B5E /* Debug */,
@@ -318,7 +318,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1BE934E22F68997400A78B5E /* Build configuration list for PBXNativeTarget "cookbooks" */ = {
+		1BE934E22F68997400A78B5E /* Build configuration list for PBXNativeTarget "Slowcook" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1BE934E32F68997400A78B5E /* Debug */,
