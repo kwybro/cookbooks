@@ -1,22 +1,26 @@
-name: iOS Release
+name: iOS Release → TestFlight
 
-# Trigger manually from GitHub UI or automatically on version tags (e.g. ios/v1.2.3)
+# Runs automatically on every merge to main that touches the iOS app.
+# Also triggerable manually from GitHub mobile (Actions tab → Run workflow).
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/ios/**'
+      - '.github/workflows/ios-release.yml'
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Build number (leave blank to auto-increment)'
+        description: 'Build number (leave blank to use run number)'
         required: false
-      release_notes:
-        description: 'TestFlight release notes'
+      what_to_test:
+        description: 'TestFlight "What to Test" notes'
         required: false
-        default: 'Internal build'
-  push:
-    tags:
-      - 'ios/v*'
+        default: ''
 
 jobs:
-  release:
+  testflight:
     name: Archive & Upload to TestFlight
     runs-on: macos-15
 
@@ -29,12 +33,14 @@ jobs:
         with:
           xcode-version: 'latest-stable'
 
-      # ── Code signing ─────────────────────────────────────────────────────────
-      # We use App Store Connect API key so Xcode can handle signing automatically.
-      # Store these three values as GitHub repository secrets:
-      #   APP_STORE_CONNECT_API_KEY_ID          e.g. ABC123DEF4
-      #   APP_STORE_CONNECT_API_KEY_ISSUER_ID   e.g. 12345678-1234-...
-      #   APP_STORE_CONNECT_API_KEY_P8           the full .p8 file contents
+      # ── Code signing ──────────────────────────────────────────────────────────
+      # Required secrets (set in repo Settings → Secrets and variables → Actions):
+      #   APP_STORE_CONNECT_API_KEY_ID        e.g. ABC123DEF4
+      #   APP_STORE_CONNECT_API_KEY_ISSUER_ID e.g. 12345678-1234-...
+      #   APP_STORE_CONNECT_API_KEY_P8        full contents of the .p8 file
+      #
+      # Generate the key at: App Store Connect → Users & Access → Integrations → Keys
+      # Role needed: App Manager (or Developer + access to this app)
       - name: Write App Store Connect API key
         env:
           API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
@@ -43,7 +49,10 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$API_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
 
-      # ── Bump build number ─────────────────────────────────────────────────────
+      # ── Build number ──────────────────────────────────────────────────────────
+      # github.run_number auto-increments with every workflow run — good enough
+      # for TestFlight. App Store Connect requires each build to have a unique,
+      # increasing CFBundleVersion.
       - name: Set build number
         run: |
           BUILD="${{ github.event.inputs.build_number }}"
@@ -51,6 +60,7 @@ jobs:
             BUILD="${{ github.run_number }}"
           fi
           xcrun agvtool new-version -all "$BUILD"
+          echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
         working-directory: apps/ios
 
       # ── Archive ───────────────────────────────────────────────────────────────
@@ -71,8 +81,10 @@ jobs:
             -authenticationKeyIssuerID "$API_KEY_ISSUER_ID" \
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
-      # ── Export IPA ────────────────────────────────────────────────────────────
-      - name: Export IPA
+      # ── Export & Upload ───────────────────────────────────────────────────────
+      # destination=upload means xcodebuild pushes the IPA directly to
+      # App Store Connect during the export step — no separate altool call needed.
+      - name: Export & upload to App Store Connect
         env:
           API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
@@ -101,22 +113,18 @@ jobs:
             -authenticationKeyID "$API_KEY_ID" \
             -authenticationKeyIssuerID "$API_KEY_ISSUER_ID"
 
-      # ── Upload to TestFlight ──────────────────────────────────────────────────
-      - name: Upload to TestFlight
-        env:
-          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+      # ── Summary ───────────────────────────────────────────────────────────────
+      - name: Job summary
         run: |
-          xcrun altool --upload-app \
-            --type ios \
-            --file /tmp/Slowcook-export/Slowcook.ipa \
-            --apiKey "$API_KEY_ID" \
-            --apiIssuer "$API_KEY_ISSUER_ID"
+          echo "## ✅ Build $BUILD_NUMBER uploaded to TestFlight" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "After testing on your device, submit for App Store review by running the" >> "$GITHUB_STEP_SUMMARY"
+          echo "[**iOS Submit to App Store**](../../actions/workflows/ios-submit.yml) workflow." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload archive as artifact
+      - name: Save xcarchive
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Slowcook-archive
+          name: Slowcook-build-${{ env.BUILD_NUMBER }}
           path: /tmp/Slowcook.xcarchive
-          retention-days: 14
+          retention-days: 30
