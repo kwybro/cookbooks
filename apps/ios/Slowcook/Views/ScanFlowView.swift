@@ -211,12 +211,17 @@ struct ScanFlowView: View {
             processingStatus = "Running OCR on \(images.count) image\(images.count == 1 ? "" : "s")…"
             let rawText = try await OCRService.recognizeText(in: images)
 
-            processingStatus = "Extracting recipes with Claude…"
-            guard let apiKey = KeychainService.load(for: KeychainService.claudeAPIKeyKey) else {
-                throw ExtractionError.noAPIKey
+            let result: ScanResult
+            if #available(iOS 26, *) {
+                processingStatus = "Extracting recipes with Apple Intelligence…"
+                result = try await AppleIntelligenceService().extractBook(from: rawText)
+            } else {
+                processingStatus = "Extracting recipes with Claude…"
+                guard let apiKey = KeychainService.load(for: KeychainService.claudeAPIKeyKey) else {
+                    throw ExtractionError.noAPIKey
+                }
+                result = try await ClaudeService(apiKey: apiKey).extractBook(from: rawText)
             }
-            let service = ClaudeService(apiKey: apiKey)
-            let result = try await service.extractBook(from: rawText)
 
             reviewTitle = result.title
             reviewAuthor = result.author ?? ""
