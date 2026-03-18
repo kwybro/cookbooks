@@ -59,17 +59,28 @@ final class LibraryStore {
         for (index, sql) in migrations.enumerated() {
             guard index >= applied else { continue }
 
-            // drizzle-kit separates statements with `--> statement-breakpoint`
-            let statements = sql.components(separatedBy: "--> statement-breakpoint")
-            for statement in statements {
-                let trimmed = statement.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { continue }
-                try conn.execute(trimmed)
-            }
+            // Each migration is atomic: if any statement fails the whole file
+            // rolls back and user_version stays at its previous value, so the
+            // next launch retries from a clean state rather than getting stuck
+            // in a partially-applied migration.
+            try conn.execute("BEGIN")
+            do {
+                // drizzle-kit separates statements with `--> statement-breakpoint`
+                let statements = sql.components(separatedBy: "--> statement-breakpoint")
+                for statement in statements {
+                    let trimmed = statement.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { continue }
+                    try conn.execute(trimmed)
+                }
 
-            // PRAGMA user_version cannot be parameterised — interpolation is safe
-            // here because `index` is an Int from our own loop counter.
-            try conn.execute("PRAGMA user_version = \(index + 1)")
+                // PRAGMA user_version cannot be parameterised — interpolation is safe
+                // here because `index` is an Int from our own loop counter.
+                try conn.execute("PRAGMA user_version = \(index + 1)")
+                try conn.execute("COMMIT")
+            } catch {
+                try? conn.execute("ROLLBACK")
+                throw error
+            }
         }
     }
 
