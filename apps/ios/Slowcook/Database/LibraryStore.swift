@@ -7,7 +7,7 @@ import Libsql
 /// store, which re-loads the affected data after each write so the UI stays
 /// consistent.
 ///
-/// Connection mode: local-only (`Database(path:)`). When the paid cloud sync
+/// Connection mode: local-only (`Database(_ path:)`). When the paid cloud sync
 /// tier is added, swap to `Database(path:url:authToken:syncInterval:)` —
 /// nothing else in the app needs to change.
 @Observable
@@ -27,7 +27,8 @@ final class LibraryStore {
 
     init() throws {
         let path = Self.databasePath()
-        let db = try Database(path: path)
+        // Local-only init takes a single positional (unlabelled) path argument
+        let db = try Database(path)
         conn = try db.connect()
         try conn.execute("PRAGMA foreign_keys = ON")
         try applyMigrations()
@@ -87,8 +88,7 @@ final class LibraryStore {
     private func currentSchemaVersion() throws -> Int {
         let rows = try conn.query("PRAGMA user_version")
         for row in rows {
-            let version: Int64 = try row.get(0)
-            return Int(version)
+            return try row.getInt(0)
         }
         return 0
     }
@@ -117,21 +117,22 @@ final class LibraryStore {
             LEFT JOIN recipes r ON r.book_id = b.id
             GROUP BY b.id
             ORDER BY b.created_at DESC
-        """)
+            """)
 
         var result: [Book] = []
         for row in rows {
-            let id: String      = try row.get(0)
-            let title: String   = try row.get(1)
-            let author: String? = row.isNull(2) ? nil : try row.get(2)
-            let ts: Int64       = try row.get(3)
-            let count: Int64    = try row.get(4)
+            let id     = try row.getString(0)
+            let title  = try row.getString(1)
+            // try? returns nil when the column is NULL rather than throwing
+            let author = try? row.getString(2)
+            let ts     = try row.getInt(3)
+            let count  = try row.getInt(4)
             result.append(Book(
                 id: id,
                 title: title,
                 author: author,
                 createdAt: Date(timeIntervalSince1970: TimeInterval(ts)),
-                recipeCount: Int(count)
+                recipeCount: count
             ))
         }
         books = result
@@ -142,16 +143,17 @@ final class LibraryStore {
             SELECT id, book_id, name, page_start, page_end, created_at
             FROM recipes
             ORDER BY name
-        """)
+            """)
 
         var result: [Recipe] = []
         for row in rows {
-            let id: String      = try row.get(0)
-            let bookId: String  = try row.get(1)
-            let name: String    = try row.get(2)
-            let pageStart: Int? = row.isNull(3) ? nil : Int(try row.get(3) as Int64)
-            let pageEnd: Int?   = row.isNull(4) ? nil : Int(try row.get(4) as Int64)
-            let ts: Int64       = try row.get(5)
+            let id        = try row.getString(0)
+            let bookId    = try row.getString(1)
+            let name      = try row.getString(2)
+            // try? returns nil when the column is NULL rather than throwing
+            let pageStart = try? row.getInt(3)
+            let pageEnd   = try? row.getInt(4)
+            let ts        = try row.getInt(5)
             result.append(Recipe(
                 id: id,
                 bookId: bookId,
@@ -184,6 +186,7 @@ final class LibraryStore {
         }
 
         try loadBooks()
+        // loadBooks() just succeeded so the book is guaranteed to be present
         return books.first { $0.id == id }!
     }
 
