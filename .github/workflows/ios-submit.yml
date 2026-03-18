@@ -1,0 +1,44 @@
+name: iOS Submit to App Store
+
+# Run this from GitHub mobile (Actions tab → iOS Submit to App Store → Run workflow)
+# after you've tested the build in TestFlight and are happy to ship.
+#
+# No Mac or Xcode required — this only calls the App Store Connect REST API.
+on:
+  workflow_dispatch:
+    inputs:
+      marketing_version:
+        description: 'Marketing version to submit (e.g. 1.0.1) — leave blank for latest'
+        required: false
+        default: ''
+      reviewer_notes:
+        description: 'Notes for the App Store reviewer (optional)'
+        required: false
+        default: ''
+
+jobs:
+  submit:
+    name: Submit to App Store Review
+    runs-on: ubuntu-latest   # no Xcode needed — just HTTPS calls
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Submit via App Store Connect API
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          BUNDLE_ID: com.slowcook.app
+          MARKETING_VERSION: ${{ github.event.inputs.marketing_version }}
+          REVIEWER_NOTES: ${{ github.event.inputs.reviewer_notes }}
+        run: node .github/scripts/asc-submit.js
+
+      - name: Job summary
+        if: success()
+        run: |
+          echo "## 🚀 Submitted to App Store review!" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Track review status at [App Store Connect](https://appstoreconnect.apple.com)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Apple typically reviews within 24 hours." >> "$GITHUB_STEP_SUMMARY"
