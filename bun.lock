@@ -55,6 +55,14 @@
         "vitest": "^3.0.5",
       },
     },
+    "packages/data-ops": {
+      "name": "@cookbooks/data-ops",
+      "version": "0.0.1",
+      "devDependencies": {
+        "drizzle-kit": "^0.31.8",
+        "drizzle-orm": "^0.45.1",
+      },
+    },
     "packages/db": {
       "name": "@cookbooks/db",
       "version": "0.0.1",
@@ -309,6 +317,8 @@
     "@cloudflare/workerd-windows-64": ["@cloudflare/workerd-windows-64@1.20260205.0", "", { "os": "win32", "cpu": "x64" }, "sha512-SMPW5jCZYOG7XFIglSlsgN8ivcl0pCrSAYxCwxtWvZ88whhcDB/aISNtiQiDZujPH8tIo2hE5dEkxW7tGEwc3A=="],
 
     "@cloudflare/workers-types": ["@cloudflare/workers-types@4.20260214.0", "", {}, "sha512-qb8rgbAdJR4BAPXolXhFL/wuGtecHLh1veOyZ1mK6QqWuCdI3vK1biKC0i3lzmzdLR/DZvsN3mNtpUE8zpWGEg=="],
+
+    "@cookbooks/data-ops": ["@cookbooks/data-ops@workspace:packages/data-ops"],
 
     "@cookbooks/db": ["@cookbooks/db@workspace:packages/db"],
 

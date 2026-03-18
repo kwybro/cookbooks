@@ -1,0 +1,14 @@
+{
+  "name": "@cookbooks/data-ops",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "copy-migrations": "bash scripts/copy-migrations.sh",
+    "sync": "bun run generate && bun run copy-migrations"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.8",
+    "drizzle-orm": "^0.45.1"
+  }
+}

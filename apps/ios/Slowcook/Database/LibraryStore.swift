@@ -29,7 +29,8 @@ final class LibraryStore {
         let path = Self.databasePath()
         let db = try Database(path: path)
         conn = try db.connect()
-        try applySchema()
+        try conn.execute("PRAGMA foreign_keys = ON")
+        try applyMigrations()
         try loadAll()
     }
 
@@ -43,29 +44,51 @@ final class LibraryStore {
         return dir.appendingPathComponent("library.db").path
     }
 
-    private func applySchema() throws {
-        // Enable cascading deletes through foreign keys
-        try conn.execute("PRAGMA foreign_keys = ON")
+    /// Applies any pending SQL migrations from the app bundle in filename order.
+    ///
+    /// Migration files live in `apps/ios/Slowcook/Migrations/` and are generated
+    /// by `drizzle-kit` in `packages/data-ops`. Run `bun run sync` there to
+    /// regenerate and copy them here whenever the schema changes.
+    ///
+    /// `PRAGMA user_version` tracks how many migrations have been applied so each
+    /// file is executed exactly once, even across app updates.
+    private func applyMigrations() throws {
+        let applied = try currentSchemaVersion()
+        let migrations = Self.bundledMigrations()
 
-        try conn.execute("""
-            CREATE TABLE IF NOT EXISTS books (
-                id         TEXT    PRIMARY KEY,
-                title      TEXT    NOT NULL,
-                author     TEXT,
-                created_at INTEGER NOT NULL
-            )
-        """)
+        for (index, sql) in migrations.enumerated() {
+            guard index >= applied else { continue }
 
-        try conn.execute("""
-            CREATE TABLE IF NOT EXISTS recipes (
-                id         TEXT    PRIMARY KEY,
-                book_id    TEXT    NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-                name       TEXT    NOT NULL,
-                page_start INTEGER,
-                page_end   INTEGER,
-                created_at INTEGER NOT NULL
-            )
-        """)
+            // drizzle-kit separates statements with `--> statement-breakpoint`
+            let statements = sql.components(separatedBy: "--> statement-breakpoint")
+            for statement in statements {
+                let trimmed = statement.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { continue }
+                try conn.execute(trimmed)
+            }
+
+            // PRAGMA user_version cannot be parameterised — interpolation is safe
+            // here because `index` is an Int from our own loop counter.
+            try conn.execute("PRAGMA user_version = \(index + 1)")
+        }
+    }
+
+    private func currentSchemaVersion() throws -> Int {
+        let rows = try conn.query("PRAGMA user_version")
+        for row in rows {
+            let version: Int64 = try row.get(0)
+            return Int(version)
+        }
+        return 0
+    }
+
+    /// Returns the contents of all `*.sql` files in the app bundle, sorted by
+    /// filename so migrations are applied in the order drizzle-kit numbered them.
+    private static func bundledMigrations() -> [String] {
+        let urls = Bundle.main.urls(forResourcesWithExtension: "sql", subdirectory: nil) ?? []
+        return urls
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .compactMap { try? String(contentsOf: $0, encoding: .utf8) }
     }
 
     // MARK: – Load

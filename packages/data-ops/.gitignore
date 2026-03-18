@@ -1,0 +1,4 @@
+node_modules/
+
+# drizzle-kit internal state — migrations/*.sql are committed, meta is not
+migrations/meta/
