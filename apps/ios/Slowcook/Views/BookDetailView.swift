@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct BookDetailView: View {
-    @Bindable var book: Book
+    let bookId: String
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(LibraryStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
 
     @State private var showScanMore = false
     @State private var showDeleteConfirm = false
@@ -12,13 +12,8 @@ struct BookDetailView: View {
     @State private var editTitle = ""
     @State private var editAuthor = ""
 
-    @Environment(\.dismiss) private var dismiss
-
-    private var sortedRecipes: [Recipe] {
-        book.recipes.sorted {
-            ($0.pageStart ?? Int.max) < ($1.pageStart ?? Int.max)
-        }
-    }
+    private var book: Book? { store.book(id: bookId) }
+    private var sortedRecipes: [Recipe] { store.recipes(forBookId: bookId) }
 
     var body: some View {
         List {
@@ -43,7 +38,7 @@ struct BookDetailView: View {
                 .onDelete(perform: deleteRecipes)
             }
         }
-        .navigationTitle(book.title)
+        .navigationTitle(book?.title ?? "")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -52,8 +47,8 @@ struct BookDetailView: View {
                         showScanMore = true
                     }
                     Button("Edit Book Info", systemImage: "pencil") {
-                        editTitle = book.title
-                        editAuthor = book.author ?? ""
+                        editTitle = book?.title ?? ""
+                        editAuthor = book?.author ?? ""
                         isEditingTitle = true
                     }
                     Divider()
@@ -66,22 +61,24 @@ struct BookDetailView: View {
             }
         }
         .sheet(isPresented: $showScanMore) {
-            ScanFlowView(appendingTo: book)
+            if let book {
+                ScanFlowView(appendingTo: book)
+            }
         }
         .sheet(isPresented: $isEditingTitle) {
             editBookSheet
         }
         .confirmationDialog(
-            "Delete \"\(book.title)\"?",
+            "Delete \"\(book?.title ?? "")\"?",
             isPresented: $showDeleteConfirm,
             titleVisibility: .visible
         ) {
             Button("Delete Book", role: .destructive) {
-                modelContext.delete(book)
+                try? store.deleteBook(id: bookId)
                 dismiss()
             }
         } message: {
-            Text("This will permanently delete the book and all \(book.recipes.count) recipes.")
+            Text("This will permanently delete the book and all \(sortedRecipes.count) recipes.")
         }
     }
 
@@ -98,9 +95,9 @@ struct BookDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        book.title = editTitle.trimmingCharacters(in: .whitespaces)
-                        let a = editAuthor.trimmingCharacters(in: .whitespaces)
-                        book.author = a.isEmpty ? nil : a
+                        let title = editTitle.trimmingCharacters(in: .whitespaces)
+                        let author = editAuthor.trimmingCharacters(in: .whitespaces)
+                        try? store.updateBook(id: bookId, title: title, author: author.isEmpty ? nil : author)
                         isEditingTitle = false
                     }
                     .disabled(editTitle.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -114,7 +111,7 @@ struct BookDetailView: View {
 
     private func deleteRecipes(at offsets: IndexSet) {
         for i in offsets {
-            modelContext.delete(sortedRecipes[i])
+            try? store.deleteRecipe(id: sortedRecipes[i].id)
         }
     }
 }

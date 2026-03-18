@@ -1,18 +1,14 @@
 import SwiftUI
-import SwiftData
 
 struct SearchView: View {
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Recipe.name) private var allRecipes: [Recipe]
+    @Environment(LibraryStore.self) private var store
 
     @State private var query = ""
-    @State private var selectedBook: Book? = nil
+    @State private var selectedBookId: String? = nil
 
     private var results: [Recipe] {
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
-        return allRecipes.filter {
-            $0.name.localizedCaseInsensitiveContains(query)
-        }
+        store.searchRecipes(query: query)
     }
 
     var body: some View {
@@ -29,13 +25,13 @@ struct SearchView: View {
                 } else {
                     ForEach(results) { recipe in
                         Button {
-                            selectedBook = recipe.book
+                            selectedBookId = recipe.bookId
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(recipe.name)
                                     .foregroundStyle(.primary)
                                 HStack {
-                                    Text(recipe.book?.title ?? "Unknown Book")
+                                    Text(store.book(id: recipe.bookId)?.title ?? "Unknown Book")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     if !recipe.pageDisplay.isEmpty {
@@ -61,8 +57,8 @@ struct SearchView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .navigationDestination(item: $selectedBook) { book in
-                BookDetailView(book: book)
+            .navigationDestination(item: $selectedBookId) { bookId in
+                BookDetailView(bookId: bookId)
             }
         }
     }

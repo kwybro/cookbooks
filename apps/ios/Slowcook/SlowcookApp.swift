@@ -1,13 +1,14 @@
 import SwiftUI
-import SwiftData
 
 @main
 struct SlowcookApp: App {
+    @State private var store = try! LibraryStore()
     @State private var showSettings = false
 
     var body: some Scene {
         WindowGroup {
             LibraryView()
+                .environment(store)
                 .sheet(isPresented: $showSettings) {
                     SettingsView()
                 }
@@ -17,6 +18,5 @@ struct SlowcookApp: App {
                     }
                 }
         }
-        .modelContainer(for: [Book.self, Recipe.self])
     }
 }

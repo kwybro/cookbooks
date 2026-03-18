@@ -1,12 +1,11 @@
 import SwiftUI
-import SwiftData
 
 struct ScanFlowView: View {
     /// When set, scan is in "append" mode — new recipes go into this book
     /// rather than creating a new one.
     var appendingTo: Book? = nil
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(LibraryStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
     @State private var step: ScanStep = .cover
@@ -203,7 +202,6 @@ struct ScanFlowView: View {
         isProcessing = true
 
         do {
-            // Collect images
             var images: [UIImage] = []
             if appendingTo == nil, let cover = coverImage { images.append(cover) }
             images.append(contentsOf: indexImages)
@@ -240,22 +238,17 @@ struct ScanFlowView: View {
         let title = reviewTitle.trimmingCharacters(in: .whitespaces)
         let author = reviewAuthor.trimmingCharacters(in: .whitespaces)
 
-        let book: Book
-        if let existing = appendingTo {
-            book = existing
-        } else {
-            book = Book(title: title, author: author.isEmpty ? nil : author)
-            modelContext.insert(book)
-        }
-
-        for extracted in reviewRecipes {
-            let recipe = Recipe(
-                name: extracted.name,
-                pageStart: extracted.pageStart,
-                pageEnd: extracted.pageEnd
-            )
-            recipe.book = book
-            modelContext.insert(recipe)
+        do {
+            if let existing = appendingTo {
+                try store.insertRecipes(reviewRecipes, intoBookId: existing.id)
+            } else {
+                let book = try store.insertBook(title: title, author: author.isEmpty ? nil : author)
+                try store.insertRecipes(reviewRecipes, intoBookId: book.id)
+            }
+        } catch {
+            // In practice this only fails on a full disk; surface via processingError
+            processingError = error.localizedDescription
+            return
         }
 
         dismiss()
