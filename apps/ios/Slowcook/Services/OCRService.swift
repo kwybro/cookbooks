@@ -1,3 +1,4 @@
+#if os(iOS)
 import UIKit
 import Vision
 
@@ -39,3 +40,4 @@ enum OCRService {
         }
     }
 }
+#endif

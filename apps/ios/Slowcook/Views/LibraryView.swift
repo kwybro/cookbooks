@@ -1,8 +1,8 @@
+#if os(iOS)
 import SwiftUI
-import SwiftData
 
 struct LibraryView: View {
-    @Query(sort: \Book.createdAt, order: .reverse) private var books: [Book]
+    @Environment(LibraryStore.self) private var store
 
     @State private var showScan = false
     @State private var showSettings = false
@@ -13,13 +13,13 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if books.isEmpty {
+                if store.books.isEmpty {
                     emptyState
                 } else {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(books) { book in
-                                NavigationLink(destination: BookDetailView(book: book)) {
+                            ForEach(store.books) { book in
+                                NavigationLink(destination: BookDetailView(bookId: book.id)) {
                                     BookCard(book: book)
                                 }
                                 .buttonStyle(.plain)
@@ -98,7 +98,7 @@ struct BookCard: View {
                         .lineLimit(1)
                 }
 
-                Text("\(book.recipes.count) recipe\(book.recipes.count == 1 ? "" : "s")")
+                Text("\(book.recipeCount) recipe\(book.recipeCount == 1 ? "" : "s")")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -108,3 +108,4 @@ struct BookCard: View {
         .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
     }
 }
+#endif

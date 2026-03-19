@@ -1,22 +1,20 @@
 import Foundation
-import SwiftData
 
-@Model
-final class Recipe {
-    var id: String
+struct Recipe: Identifiable {
+    let id: String
+    let bookId: String
     var name: String
     var pageStart: Int?
     var pageEnd: Int?
-    var createdAt: Date
+    let createdAt: Date
 
-    var book: Book?
-
-    init(id: String = UUID().uuidString, name: String, pageStart: Int?, pageEnd: Int?) {
+    init(id: String = UUID().uuidString, bookId: String, name: String, pageStart: Int?, pageEnd: Int?, createdAt: Date = Date()) {
         self.id = id
+        self.bookId = bookId
         self.name = name
         self.pageStart = pageStart
         self.pageEnd = pageEnd
-        self.createdAt = Date()
+        self.createdAt = createdAt
     }
 
     var pageDisplay: String {

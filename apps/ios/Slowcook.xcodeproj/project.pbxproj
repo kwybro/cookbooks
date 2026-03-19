@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1BE934F22F68997400A78B5E /* Libsql in Frameworks */ = {isa = PBXBuildFile; productRef = 1BE934F12F68997400A78B5E /* Libsql */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		1BE934D52F68997400A78B5E /* Slowcook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slowcook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BE934F22F68997400A78B5E /* Libsql in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Slowcook;
 			packageProductDependencies = (
+				1BE934F12F68997400A78B5E /* Libsql */,
 			);
 			productName = cookbooks;
 			productReference = 1BE934D52F68997400A78B5E /* Slowcook.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 1BE934CC2F68997400A78B5E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1BE934F02F68997400A78B5E /* XCRemoteSwiftPackageReference "libsql-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1BE934D62F68997400A78B5E /* Products */;
 			projectDirPath = "";
@@ -251,8 +260,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q2EX88J2S6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Slowcook uses the camera to photograph cookbook covers and index pages.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -282,8 +293,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q2EX88J2S6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Slowcook uses the camera to photograph cookbook covers and index pages.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -328,6 +341,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1BE934F02F68997400A78B5E /* XCRemoteSwiftPackageReference "libsql-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tursodatabase/libsql-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1BE934F12F68997400A78B5E /* Libsql */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1BE934F02F68997400A78B5E /* XCRemoteSwiftPackageReference "libsql-swift" */;
+			productName = Libsql;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1BE934CD2F68997400A78B5E /* Project object */;
 }

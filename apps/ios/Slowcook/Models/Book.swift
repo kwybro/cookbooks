@@ -1,19 +1,17 @@
 import Foundation
-import SwiftData
 
-@Model
-final class Book {
-    var id: String
+struct Book: Identifiable {
+    let id: String
     var title: String
     var author: String?
-    var createdAt: Date
+    let createdAt: Date
+    var recipeCount: Int
 
-    @Relationship(deleteRule: .cascade) var recipes: [Recipe] = []
-
-    init(id: String = UUID().uuidString, title: String, author: String?) {
+    init(id: String = UUID().uuidString, title: String, author: String?, createdAt: Date = Date(), recipeCount: Int = 0) {
         self.id = id
         self.title = title
         self.author = author
-        self.createdAt = Date()
+        self.createdAt = createdAt
+        self.recipeCount = recipeCount
     }
 }
