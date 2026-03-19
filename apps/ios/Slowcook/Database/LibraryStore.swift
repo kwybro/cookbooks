@@ -30,7 +30,7 @@ final class LibraryStore {
         // Local-only init takes a single positional (unlabelled) path argument
         let db = try Database(path)
         conn = try db.connect()
-        try conn.execute("PRAGMA foreign_keys = ON")
+        try execute("PRAGMA foreign_keys = ON")
         try applyMigrations()
         try loadAll()
     }
@@ -64,22 +64,22 @@ final class LibraryStore {
             // rolls back and user_version stays at its previous value, so the
             // next launch retries from a clean state rather than getting stuck
             // in a partially-applied migration.
-            try conn.execute("BEGIN")
+            try execute("BEGIN")
             do {
                 // drizzle-kit separates statements with `--> statement-breakpoint`
                 let statements = sql.components(separatedBy: "--> statement-breakpoint")
                 for statement in statements {
                     let trimmed = statement.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { continue }
-                    try conn.execute(trimmed)
+                    try execute(trimmed)
                 }
 
                 // PRAGMA user_version cannot be parameterised — interpolation is safe
                 // here because `index` is an Int from our own loop counter.
-                try conn.execute("PRAGMA user_version = \(index + 1)")
-                try conn.execute("COMMIT")
+                try execute("PRAGMA user_version = \(index + 1)")
+                try execute("COMMIT")
             } catch {
-                try? conn.execute("ROLLBACK")
+                _ = try? conn.execute("ROLLBACK")
                 throw error
             }
         }
@@ -174,12 +174,12 @@ final class LibraryStore {
         let now = Int64(Date().timeIntervalSince1970)
 
         if let author {
-            try conn.execute(
+            try execute(
                 "INSERT INTO books (id, title, author, created_at) VALUES (?, ?, ?, ?)",
                 [Value.text(id), Value.text(title), Value.text(author), Value.integer(now)]
             )
         } else {
-            try conn.execute(
+            try execute(
                 "INSERT INTO books (id, title, created_at) VALUES (?, ?, ?)",
                 [Value.text(id), Value.text(title), Value.integer(now)]
             )
@@ -192,12 +192,12 @@ final class LibraryStore {
 
     func updateBook(id: String, title: String, author: String?) throws {
         if let author {
-            try conn.execute(
+            try execute(
                 "UPDATE books SET title = ?, author = ? WHERE id = ?",
                 [Value.text(title), Value.text(author), Value.text(id)]
             )
         } else {
-            try conn.execute(
+            try execute(
                 "UPDATE books SET title = ?, author = NULL WHERE id = ?",
                 [Value.text(title), Value.text(id)]
             )
@@ -206,7 +206,7 @@ final class LibraryStore {
     }
 
     func deleteBook(id: String) throws {
-        try conn.execute("DELETE FROM books WHERE id = ?", [Value.text(id)])
+        try execute("DELETE FROM books WHERE id = ?", [Value.text(id)])
         try loadAll()
     }
 
@@ -218,19 +218,19 @@ final class LibraryStore {
             let id = UUID().uuidString
             switch (e.pageStart, e.pageEnd) {
             case let (start?, end?):
-                try conn.execute(
+                try execute(
                     "INSERT INTO recipes (id, book_id, name, page_start, page_end, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                     [Value.text(id), Value.text(bookId), Value.text(e.name),
                      Value.integer(Int64(start)), Value.integer(Int64(end)), Value.integer(now)]
                 )
             case let (start?, nil):
-                try conn.execute(
+                try execute(
                     "INSERT INTO recipes (id, book_id, name, page_start, created_at) VALUES (?, ?, ?, ?, ?)",
                     [Value.text(id), Value.text(bookId), Value.text(e.name),
                      Value.integer(Int64(start)), Value.integer(now)]
                 )
             default:
-                try conn.execute(
+                try execute(
                     "INSERT INTO recipes (id, book_id, name, created_at) VALUES (?, ?, ?, ?)",
                     [Value.text(id), Value.text(bookId), Value.text(e.name), Value.integer(now)]
                 )
@@ -240,8 +240,22 @@ final class LibraryStore {
     }
 
     func deleteRecipe(id: String) throws {
-        try conn.execute("DELETE FROM recipes WHERE id = ?", [Value.text(id)])
+        try execute("DELETE FROM recipes WHERE id = ?", [Value.text(id)])
         try loadAll()
+    }
+
+    // MARK: – Execute helpers
+
+    // conn.execute() returns Int (affected row count) without @discardableResult.
+    // These wrappers let call sites omit `_ =` everywhere.
+    @discardableResult
+    private func execute(_ sql: String) throws -> Int {
+        try conn.execute(sql)
+    }
+
+    @discardableResult
+    private func execute(_ sql: String, _ params: [any ValueRepresentable]) throws -> Int {
+        try conn.execute(sql, params)
     }
 
     // MARK: – Queries
