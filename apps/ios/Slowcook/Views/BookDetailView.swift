@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 struct BookDetailView: View {
@@ -115,3 +116,4 @@ struct BookDetailView: View {
         }
     }
 }
+#endif

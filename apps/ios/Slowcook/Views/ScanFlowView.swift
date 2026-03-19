@@ -1,3 +1,6 @@
+// ScanFlowView depends on UIImage and CameraView, both of which require UIKit.
+// UIKit is unavailable in the macOS 26 SDK, so the entire view is iOS-only.
+#if os(iOS)
 import SwiftUI
 
 struct ScanFlowView: View {
@@ -295,3 +298,4 @@ struct ScanFlowView: View {
         .padding(.horizontal)
     }
 }
+#endif

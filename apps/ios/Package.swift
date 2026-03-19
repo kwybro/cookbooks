@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // This Package.swift exists alongside the Xcode project to give sourcekit-lsp
 // (and `swift build`) a structured target to index. It is NOT used for device
 // builds — Slowcook.xcodeproj handles those.
